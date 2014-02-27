@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset=utf-8>
+<meta name="viewport" content="width=620">
+<title>Photo Voting Game</title>
+<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.1/css/bootstrap.min.css">
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<link rel="stylesheet" href="/stylesheets/style.css">
+</head>
+<body>
+<section id="wrapper">
+
+<nav>
+	<a href="./">Game</a>
+	<a class="active" href="./standings">Standings</a>
+</nav>
+
+
+
+	<ul>
+	<% for(var i=0; i<standings.length; i++) {%>
+   <li class="container">
+   			
+			<img src="photos/<%= standings[i].name %>" alt="Cat picture thumbnail" />
+			<div class="photo-standing">
+			<p class="up"><%= standings[i].like %></p>
+			<p class="down"><%= standings[i].Dislike %></p>
+			</div>
+		</li>
+<% } %>
+
+
+	</ul>
+	</section>
+</body>
+</html>

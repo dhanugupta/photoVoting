@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset=utf-8>
+<meta name="viewport" content="width=620">
+<title>Photo Voting Game</title>
+<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.1/css/bootstrap.min.css">
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js" type="text/javascript"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.5.2/underscore-min.js" type="text/javascript"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.1.0/backbone-min.js" type="text/javascript"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/Chart.js/0.2.0/Chart.min.js" type="text/javascript"></script>
+<script src="http://code.highcharts.com/highcharts.js"></script>
+<script src="http://code.highcharts.com/modules/exporting.js"></script>  
+<script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/0.9.16/socket.io.min.js"></script>
+<link rel="stylesheet" href="/stylesheets/style.css">
+<style>
+.chart div {
+  font: 10px sans-serif;
+  background-color: steelblue;
+  text-align: right;
+  padding: 3px;
+  margin: 1px;
+  color: white;
+}
+</style>
+</head>
+<body>
+<section id="wrapper">
+<h1><%=title %></h2>
+<!-- <nav>
+	<a class="active" href="./">Game</a>
+	<a href="./standings">Standings</a>
+</nav> -->
+
+<div id="chartContainer"></div>
+<ul id="display"></ul>
+<script id="photoTemplate" type="text/template">
+
+<li class="container" style="width:70%" id="{{_id}}">
+
+<h2> {{title}} </h2>
+
+<img src="photos/{{name}}" width="350px" />
+<div class="photo-standing">
+<div class="button-holder">
+		<input type="button" value="" class="btnListener up" data-id="{{_id}}" data-type="like"/>
+<input type="button" value="" class="btnListener down" data-id="{{_id}}" data-type="Dislike"/>
+<br><br>
+Total Likes:<div class="count_like">{{like}}</div>
+Total Dislikes:<div class="count_Dislike">{{Dislike}}</div>
+
+
+<!-- <canvas id="chart_{{_id}}" width="250" height="250"></canvas> -->
+		</div>
+		<div id="chart_{{_id}}" class="chart"></div>
+		</li>
+</script>
+
+</section>
+<script id="photoTemplateTest" type="text/template">
+<% if(typeof photo != "undefined" ) {%>
+	<img src="photos/<%= photo.name %>" width="530" height="420" alt="Cat Picture" />
+
+	<div class="button-holder">
+		<form action="./cute" method="post">
+			<input type="hidden" name="photo" value="<%= photo.name %>" />
+			<input type="submit" value="Cute!" />
+		</form>
+		<form action="./notcute" method="post">
+			<input type="hidden" name="photo" value="<%= photo.name %>" />
+			<input type="submit" value="Not Cute!" />
+		</form>
+	</div>
+<% } %>
+</div>
+</script>
+</body>
+
+<script>
+var co = "http://localhost:3000";
+//var co = "http://devphotorg-a01.twhite.aol.com:3000";
+var socket = io.connect(co);
+socket.on('connection', function(msg){
+    console.log(msg);
+});
+socket.on('notification', function (data) {
+console.log('notification recieved');
+	console.log(data.id);
+	var chartId = "#chart_"+data.id;
+	
+	//var ctx = $(chartId).get(0).getContext("2d");
+	
+	
+	var t = "count_"+data.type;
+	var elm = "#"+data.id+" ."+t;
+	var elmHtml = data.count;
+	var likeCount = 0,dislikeCount=0;
+	likeCount = data.likeCount;dislikeCount = data.DislikeCount;
+	var likeElm = "#"+data.id+" .count_like";
+	var DislikeElm = "#"+data.id+" .count_Dislike";
+	//var data = [{value:likeCount,color:'#F38630'},{value:dislikeCount,color:'#E0E4CC'}];
+	//var options = {};
+	//var myNewChart = new Chart(ctx).Pie(data,options);
+	$(likeElm).html(likeCount);
+	$(DislikeElm).html(dislikeCount);
+	
+    
+    var rChart = new photos.RenderChart();
+    rChart.render();
+
+
+});
+
+function chartActive(ctx,data){
+		
+		var chartId = "#"+ctx;
+		var options = {};
+		var myNewChart = new Chart(ctx).Pie(data,options);
+
+}
+_.templateSettings = {
+    interpolate : /\{\{(.+?)\}\}/g
+};
+var template = _.template( "{{}}");
+
+photos = {};
+var templates = {};
+var VoteModel = Backbone.Model.extend({
+        urlRoot: '/vote',
+        defaults: {
+            count: '',
+        type: '',
+        vote:false
+        }
+    });
+   
+var Product = Backbone.Model.extend({
+  defaults: {
+    like: "",
+    Dislike:"",
+    name:""
+  },
+
+  url: function() {
+   //return "/allPolls"; 
+  }
+});
+var Photo = Backbone.Collection.extend({
+  model: Product,
+  url: function() {
+   return "/allPolls"; 
+  }
+});
+
+templates.photo = _.template($("#photoTemplate").html());
+photos.DisplayView = Backbone.View.extend({
+    el: "#display",
+    events: {
+        "click .btnListener": "btnListener"
+    },
+    
+    initialize: function(){
+      this.template = templates.photo;
+      this.render();
+    },
+    render:function(eventName){
+	 _.each(this.model.models, function (wine) {
+           	console.log(wine.toJSON());
+           	$(this.el).append(this.template(wine.toJSON()));
+           	
+     
+        }, this);
+        return this;
+    	
+    },
+    btnListener:function(e){
+    var $this = $(e.currentTarget);
+    	var dataId = $this.attr('data-id'),
+    		dataType = $this.attr('data-type');
+    		console.log(dataId + "---"+dataType);
+    		//SEND THE BACKEND CALL TO REGISTER THE VOTE and RENDER THE UPDATE TEMPLATE
+    		 var voteTemp = new VoteModel();
+			 var dataTemp = {id:dataId,type:dataType};
+			 
+    voteTemp.fetch({type: 'POST',data:dataTemp,
+        success: function (response) {
+            console.log(response.toJSON());
+        }
+    });
+    		
+    	
+    }
+});
+photos.App = function(){
+    this.start = function(){
+        var  photoObj = new Photo(); 
+        
+    photoObj.fetch({
+          
+          success:function(products){ 
+          //console.log(products.models);
+          var displayView = new photos.DisplayView({model:products});
+                                     
+                                    }
+          
+      });
+   // console.log(photoObj);
+        
+        var iRender = new photos.RenderChart();
+        iRender.render();
+       
+        
+    }
+};
+
+photos.RenderChart = function(){
+	this.render = function(){
+	var dataLike = [],dataDislike=[],dataName=[];
+    var  photoObj = new Photo(); 
+        
+    photoObj.fetch({
+          
+          success:function(products){ 
+          	_.each(products.models, function (response) {
+           		var re = response.toJSON();
+           		dataLike.push(re.like);
+           		dataDislike.push(re.Dislike);
+           		dataName.push(re.name);
+        }, this);
+          this.renderChart(dataLike,dataDislike,dataName);
+          }
+          
+      });	
+	
+		$('html, body').animate({
+        scrollTop: $("#chartContainer").offset().top
+    }, 500);
+	},
+	renderChart = function(dataLike,dataDislike,dataName){
+		var chart;
+    chart = new Highcharts.Chart({
+            chart: {
+                renderTo: "chartContainer",
+                type: 'column'
+            },
+            title: {
+                text: 'Vote Status:'
+            },
+            subtitle: {
+                text: 'Like/Dislike Game'
+            },
+            xAxis: {
+                categories: dataName,
+                title: {
+                    text: null
+                }
+            },
+            yAxis: {
+                min: 0,
+                title: {
+                    text: 'Likes/Dislike',
+                    align: 'high'
+                },
+                labels: {
+                    overflow: 'justify'
+                }
+            },
+            tooltip: {
+                formatter: function() {
+                    return ''+
+                        this.series.name +': '+ this.y +'';
+                }
+            },
+            plotOptions: {
+                bar: {
+                    dataLabels: {
+                        enabled: true
+                    }
+                }
+            },
+            legend: {
+                layout: 'vertical',
+                align: 'right',
+                verticalAlign: 'top',
+                x: -100,
+                y: 100,
+                floating: false,
+                borderWidth: 0.5,
+                backgroundColor: '#FFFFFF',
+                shadow: true
+            },
+            credits: {
+                enabled: false
+            },
+            series: [{
+                name: 'Like',
+                data: dataLike
+            }, {
+                name: 'Dislike',
+                data: dataDislike
+            }]
+        });
+   
+	
+	}
+
+};
+$(function(){
+    var app = new photos.App();
+    app.start();
+    
+      
+ });
+    
+</script>
+
+</html>

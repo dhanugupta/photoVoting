@@ -1,0 +1,36 @@
+body {
+  
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+a {
+  color: #00B7FF;
+}
+
+ body { /*padding-top: 50px;*/ }
+        .result-table {
+          margin: 20px 0;
+          width: 100%;
+          border-collapse: collapse;
+        }
+        .result-table td { padding: 8px; }
+        .result-table > tbody > tr > td:first-child {
+          width: 25%;
+          max-width: 300px;
+          text-align: right;
+        }
+        .result-table td table {
+          background-color: lightblue;
+          text-align: right;
+        }
+ ul {list-style-type: none;}  
+ .container { }
+ .container {padding:10px;}
+ .container li img {float:left;}
+ .container .photo-standing {float:right;}     
+.up {background-image:url('/images/up.png');
+	width:48px; height:48px;
+}
+.down {background-image:url('/images/down.png');
+	width:48px; height:48px;
+}
